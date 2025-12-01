@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: ai-breaking-news
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: PORT
+        value: 10000
+      - key: SCRAPE_INTERVAL_MINUTES
+        value: 15
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/data/news.db
+    # Note: Persistent disk requires paid plan on Render
+    # For free tier, database will reset on each deploy
+    # disk:
+    #   name: news-data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1
