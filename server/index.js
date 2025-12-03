@@ -3,9 +3,15 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import newsRoutes from './routes/news.js';
 import { runNewsPipeline } from './scraper/pipeline.js';
 import { initDatabase } from './database/schema.js';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Load environment variables
 dotenv.config();
