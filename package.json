@@ -2,6 +2,7 @@
   "name": "ai-breaking-news",
   "version": "1.0.0",
   "description": "AI-powered breaking news outlet with real-time updates",
+  "type": "module",
   "main": "dist/server/index.js",
   "scripts": {
     "dev:server": "tsx watch server/index.ts",
