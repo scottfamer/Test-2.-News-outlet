@@ -99,7 +99,8 @@ export async function runNewsPipeline(): Promise<PipelineStats> {
       });
 
       const results = await Promise.all(promises);
-      processedArticles.push(...results.filter((a): a is Article & { raw: RawArticle } => a !== null));
+      const validResults = results.filter(a => a !== null) as (Article & { raw: RawArticle })[];
+processedArticles.push(...validResults);
 
       // Small delay to avoid rate limits
       if (i + batchSize < uniqueArticles.length) {
