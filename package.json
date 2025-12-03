@@ -5,10 +5,10 @@
   "type": "module",
   "main": "dist/server/index.js",
   "scripts": {
-    "dev:server": "tsx watch server/index.ts",
+    "dev:server": "tsx watch server/index.js",
     "dev:client": "vite",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "tsc -p tsconfig.server.json && cp server/index.js dist/server/index.js",
     "build:client": "vite build",
     "build": "npm run build:server && npm run build:client",
     "start": "node dist/server/index.js",
