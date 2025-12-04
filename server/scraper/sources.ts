@@ -13,15 +13,15 @@ export const NEWS_SOURCES: NewsSource[] = [
     type: 'rss',
   },
   {
-    name: 'Reuters',
-    url: 'https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best',
-    type: 'rss',
-  },
+  name: 'Reuters',
+  url: 'https://feeds.reuters.com/reuters/topNews',
+  type: 'rss',
+},
   {
-    name: 'Associated Press',
-    url: 'https://apnews.com/apf-topnews',
-    type: 'rss',
-  },
+  name: 'Associated Press',
+  url: 'https://feeds.apnews.com/rss/apnews/topnews',
+  type: 'rss',
+},
   {
     name: 'NPR News',
     url: 'https://feeds.npr.org/1001/rss.xml',
@@ -49,16 +49,17 @@ export const NEWS_SOURCES: NewsSource[] = [
   },
   
   // Government Sources
-  {
-    name: 'US Government News',
-    url: 'https://www.usa.gov/rss/updates.xml',
-    type: 'rss',
-  },
-  {
-    name: 'World Health Organization',
-    url: 'https://www.who.int/feeds/entity/mediacentre/news/en/rss.xml',
-    type: 'rss',
-  },
+  // Government Sources
+{
+  name: 'USA Today',
+  url: 'http://rssfeeds.usatoday.com/usatoday-NewsTopStories',
+  type: 'rss',
+},
+{
+  name: 'World Health Organization',
+  url: 'https://www.who.int/rss-feeds/news-english.xml',
+  type: 'rss',
+},
   
   // Tech & Science
   {
