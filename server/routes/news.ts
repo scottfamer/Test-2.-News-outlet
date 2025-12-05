@@ -10,7 +10,7 @@ const router = Router();
  */
 router.get('/news', (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 100;
+    const limit = parseInt(req.query.limit as string) || 12;
     const articles = articleQueries.getAll(limit);
     
     res.json({
