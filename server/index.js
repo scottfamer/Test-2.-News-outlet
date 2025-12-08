@@ -6,8 +6,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import newsRoutes from './routes/news.js';
+import sourcesRoutes from './routes/sources.js';
 import { runNewsPipeline } from './scraper/pipeline.js';
 import { initDatabase } from './database/schema.js';
+import { initSourcesDatabase } from './database/sources-schema.js';
+import { seedSources } from './services/source-discovery.js';
+import { runHealthChecks } from './services/source-health.js';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -16,8 +20,17 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config();
 
-// Initialize database
+// Initialize databases
 await initDatabase();
+await initSourcesDatabase();
+
+// Seed sources on first run (check if sources exist)
+import { sourceQueries } from './database/sources-schema.js';
+const existingSources = sourceQueries.getAll(false, 0);
+if (existingSources.length === 0) {
+  console.log('📦 No sources found, seeding initial sources...');
+  await seedSources();
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +41,7 @@ app.use(express.json());
 
 // API Routes
 app.use('/api', newsRoutes);
+app.use('/api', sourcesRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -68,6 +82,18 @@ cron.schedule(`*/${SCRAPE_INTERVAL} * * * *`, async () => {
 });
 
 console.log(`⏰ Scheduled scraping: Every ${SCRAPE_INTERVAL} minutes`);
+
+// Health check job - runs every 6 hours
+cron.schedule('0 */6 * * *', async () => {
+  console.log('\n🏥 Running scheduled health checks...');
+  try {
+    await runHealthChecks();
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+  }
+});
+
+console.log('🏥 Scheduled health checks: Every 6 hours');
 
 // Run initial scrape on startup (optional)
 if (process.env.RUN_ON_STARTUP !== 'false') {

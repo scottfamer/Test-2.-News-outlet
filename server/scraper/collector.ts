@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import Parser from 'rss-parser';
-import { NEWS_SOURCES, NewsSource } from './sources.js';
+import { sourceQueries, NewsSource } from '../database/sources-schema.js';
 
 const rssParser = new Parser({
   timeout: 10000,
@@ -21,7 +21,7 @@ export interface RawArticle {
 /**
  * Fetch content from RSS feed
  */
-async function fetchRSS(source: NewsSource): Promise<RawArticle[]> {
+async function fetchRSS(source: any): Promise<RawArticle[]> {
   try {
     const feed = await rssParser.parseURL(source.url);
     const articles: RawArticle[] = [];
@@ -108,16 +108,40 @@ async function fetchFullArticle(url: string): Promise<string | null> {
 export async function collectArticles(): Promise<RawArticle[]> {
   console.log('🔍 Starting article collection...');
   
+  // Get active sources from database with good health scores
+  const sources = sourceQueries.getAll(true, 30); // Active sources with health >= 30
+  console.log(`📡 Collecting from ${sources.length} active sources`);
+  
   const allArticles: RawArticle[] = [];
-  const promises = NEWS_SOURCES.map(async (source) => {
+  const promises = sources.map(async (source: any) => {
     try {
-      if (source.type === 'rss') {
-        return await fetchRSS(source);
+      let articles: RawArticle[] = [];
+      
+      if (source.type === 'rss' || source.type === 'atom') {
+        articles = await fetchRSS(source);
       }
-      return [];
+      // Add support for other types (html, api) here in the future
+      
+      // Record the fetch attempt
+      sourceQueries.recordFetchAttempt(
+        source.id,
+        articles.length > 0,
+        articles.length
+      );
+      
+      return { source, articles };
     } catch (error) {
       console.error(`Error with source ${source.name}:`, error);
-      return [];
+      
+      // Record the failed attempt
+      sourceQueries.recordFetchAttempt(
+        source.id,
+        false,
+        0,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+      
+      return { source, articles: [] };
     }
   });
 
@@ -125,14 +149,19 @@ export async function collectArticles(): Promise<RawArticle[]> {
   
   results.forEach((result, index) => {
     if (result.status === 'fulfilled') {
-      allArticles.push(...result.value);
-      console.log(`✅ ${NEWS_SOURCES[index].name}: ${result.value.length} articles`);
+      const { source, articles } = result.value;
+      allArticles.push(...articles);
+      if (articles.length > 0) {
+        console.log(`✅ ${source.name}: ${articles.length} articles`);
+      } else {
+        console.log(`⏭️  ${source.name}: 0 articles`);
+      }
     } else {
-      console.error(`❌ ${NEWS_SOURCES[index].name}: Failed`);
+      console.error(`❌ ${sources[index].name}: Failed`);
     }
   });
 
-  console.log(`📰 Total collected: ${allArticles.length} articles`);
+  console.log(`📰 Total collected: ${allArticles.length} articles from ${sources.length} sources`);
   return allArticles;
 }
 
