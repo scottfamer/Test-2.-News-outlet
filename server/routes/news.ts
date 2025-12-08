@@ -104,4 +104,41 @@ router.post('/scrape', async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/news
+ * Clears all articles from the database
+ * Useful after reseeding sources to remove articles from old sources
+ */
+router.delete('/news', async (req, res) => {
+  try {
+    console.log('🗑️  Clearing all articles...');
+    
+    const allArticles = articleQueries.getAll(1000);
+    let deleted = 0;
+    
+    for (const article of allArticles) {
+      try {
+        articleQueries.delete(article.id);
+        deleted++;
+      } catch (error) {
+        console.error(`Error deleting article ${article.id}:`, error);
+      }
+    }
+    
+    console.log(`✅ Cleared ${deleted} articles`);
+    
+    res.json({
+      success: true,
+      message: 'All articles cleared',
+      deleted
+    });
+  } catch (error) {
+    console.error('Error clearing articles:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear articles'
+    });
+  }
+});
+
 export default router;
