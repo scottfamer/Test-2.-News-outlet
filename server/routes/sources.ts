@@ -180,7 +180,7 @@ router.delete('/sources/:id', (req, res) => {
 
 /**
  * POST /api/sources/seed
- * Seeds the database with initial sources
+ * Seeds the database with initial sources (safe - won't duplicate)
  */
 router.post('/sources/seed', async (req, res) => {
   try {
@@ -196,6 +196,40 @@ router.post('/sources/seed', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to seed sources'
+    });
+  }
+});
+
+/**
+ * POST /api/sources/reseed
+ * DELETES all sources and reseeds with the exclusive list
+ * WARNING: This removes all sources and replaces with the seed list
+ */
+router.post('/sources/reseed', async (req, res) => {
+  try {
+    // Get all existing sources
+    const existingSources = sourceQueries.getAll(false, 0);
+    console.log(`Clearing ${existingSources.length} existing sources...`);
+    
+    // Delete all existing sources
+    for (const source of existingSources) {
+      sourceQueries.delete(source.id as number);
+    }
+    
+    // Seed with the new exclusive list
+    const result = await seedSources();
+    
+    res.json({
+      success: true,
+      message: 'All sources cleared and reseeded',
+      cleared: existingSources.length,
+      result
+    });
+  } catch (error) {
+    console.error('Error reseeding sources:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reseed sources'
     });
   }
 });

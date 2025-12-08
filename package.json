@@ -12,7 +12,8 @@
     "build:client": "vite build",
     "build": "npm run build:server && npm run build:client",
     "start": "node dist/server/index.js",
-    "scrape": "tsx server/scripts/runScraper.ts"
+    "scrape": "tsx server/scripts/runScraper.ts",
+    "reseed-sources": "tsx server/scripts/reseedSources.ts"
   },
   "dependencies": {
     "express": "^4.18.2",

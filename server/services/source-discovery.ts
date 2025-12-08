@@ -5,53 +5,85 @@ import { sourceQueries, NewsSource } from '../database/sources-schema.js';
 const RssParser = (RssParserModule as any).default || RssParserModule;
 const rssParser = new RssParser();
 
-// Curated list of major news sources to seed the system
+// User-specified exclusive source list
 const SEED_SOURCES: Omit<NewsSource, 'id' | 'created_at' | 'updated_at'>[] = [
   // Major Global News
   { name: 'BBC News', url: 'http://feeds.bbci.co.uk/news/rss.xml', type: 'rss', category: 'world', credibility_score: 95, is_verified: true },
-  { name: 'Reuters Top News', url: 'https://feeds.reuters.com/reuters/topNews', type: 'rss', category: 'world', credibility_score: 95, is_verified: true },
-  { name: 'AP News', url: 'https://feeds.apnews.com/rss/topnews', type: 'rss', category: 'world', credibility_score: 95, is_verified: true },
-  { name: 'The Guardian World', url: 'https://www.theguardian.com/world/rss', type: 'rss', category: 'world', credibility_score: 90, is_verified: true },
-  { name: 'Al Jazeera', url: 'https://www.aljazeera.com/xml/rss/all.xml', type: 'rss', category: 'world', credibility_score: 85, is_verified: true },
+  { name: 'Reuters', url: 'https://feeds.reuters.com/reuters/topNews', type: 'rss', category: 'world', credibility_score: 95, is_verified: true },
+  { name: 'Associated Press', url: 'https://feeds.apnews.com/rss/apnews/topnews', type: 'rss', category: 'world', credibility_score: 95, is_verified: true },
   { name: 'NPR News', url: 'https://feeds.npr.org/1001/rss.xml', type: 'rss', category: 'us', credibility_score: 90, is_verified: true },
+  { name: 'The Guardian', url: 'https://www.theguardian.com/world/rss', type: 'rss', category: 'world', credibility_score: 90, is_verified: true },
+  { name: 'Al Jazeera', url: 'https://www.aljazeera.com/xml/rss/all.xml', type: 'rss', category: 'world', credibility_score: 85, is_verified: true },
   { name: 'CNN Top Stories', url: 'http://rss.cnn.com/rss/cnn_topstories.rss', type: 'rss', category: 'us', credibility_score: 80, is_verified: true },
   { name: 'ABC News', url: 'https://abcnews.go.com/abcnews/topstories', type: 'rss', category: 'us', credibility_score: 85, is_verified: true },
   { name: 'USA Today', url: 'http://rssfeeds.usatoday.com/usatoday-NewsTopStories', type: 'rss', category: 'us', credibility_score: 80, is_verified: true },
+  { name: 'World Health Organization', url: 'https://www.who.int/rss-feeds/news-english.xml', type: 'rss', category: 'health', credibility_score: 100, is_verified: true },
   
   // Tech & Science
   { name: 'TechCrunch', url: 'https://techcrunch.com/feed/', type: 'rss', category: 'technology', credibility_score: 85, is_verified: true },
-  { name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index', type: 'rss', category: 'technology', credibility_score: 90, is_verified: true },
-  { name: 'Wired', url: 'https://www.wired.com/feed/rss', type: 'rss', category: 'technology', credibility_score: 85, is_verified: true },
-  { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', type: 'rss', category: 'technology', credibility_score: 85, is_verified: true },
   { name: 'Science Daily', url: 'https://www.sciencedaily.com/rss/all.xml', type: 'rss', category: 'science', credibility_score: 90, is_verified: true },
-  { name: 'Nature News', url: 'https://www.nature.com/nature.rss', type: 'rss', category: 'science', credibility_score: 95, is_verified: true },
-  { name: 'Scientific American', url: 'https://rss.sciam.com/ScientificAmerican-Global', type: 'rss', category: 'science', credibility_score: 95, is_verified: true },
+  
+  // Financial News
+  { name: 'Bloomberg', url: 'https://www.bloomberg.com/feed/podcast/etf-report.xml', type: 'rss', category: 'business', credibility_score: 90, is_verified: true },
+  { name: 'Financial Times', url: 'https://www.ft.com/?format=rss', type: 'rss', category: 'business', credibility_score: 90, is_verified: true },
+  
+  // International News
+  { name: 'Euronews', url: 'https://www.euronews.com/rss?level=theme&name=news', type: 'rss', category: 'world', credibility_score: 80, is_verified: true },
+  { name: 'Deutsche Welle (DW)', url: 'https://rss.dw.com/rdf/rss-en-top', type: 'rss', category: 'world', country: 'DE', credibility_score: 85, is_verified: true },
+  { name: 'France 24', url: 'https://www.france24.com/en/rss', type: 'rss', category: 'world', country: 'FR', credibility_score: 85, is_verified: true },
+  { name: 'CBC News', url: 'https://www.cbc.ca/cmlink/rss-topstories', type: 'rss', category: 'world', country: 'CA', credibility_score: 85, is_verified: true },
+  { name: 'Sky News', url: 'https://feeds.skynews.com/feeds/rss/world.xml', type: 'rss', category: 'world', country: 'UK', credibility_score: 80, is_verified: true },
+  { name: 'Japan Times', url: 'https://www.japantimes.co.jp/feed/topstories', type: 'rss', category: 'world', country: 'JP', credibility_score: 85, is_verified: true },
+  { name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed', type: 'rss', category: 'world', country: 'HK', credibility_score: 80, is_verified: true },
+  { name: 'The Telegraph', url: 'https://www.telegraph.co.uk/news/rss.xml', type: 'rss', category: 'world', country: 'UK', credibility_score: 80, is_verified: true },
+  { name: 'The Independent', url: 'https://www.independent.co.uk/news/rss', type: 'rss', category: 'world', country: 'UK', credibility_score: 80, is_verified: true },
+  { name: 'Times of India', url: 'https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms', type: 'rss', category: 'world', country: 'IN', credibility_score: 75, is_verified: true },
+  { name: 'Hindustan Times', url: 'https://www.hindustantimes.com/rss/topnews/rssfeed.xml', type: 'rss', category: 'world', country: 'IN', credibility_score: 75, is_verified: true },
+  { name: 'Sydney Morning Herald', url: 'https://www.smh.com.au/rss/feed.xml', type: 'rss', category: 'world', country: 'AU', credibility_score: 80, is_verified: true },
+  { name: 'The Globe and Mail', url: 'https://www.theglobeandmail.com/?service=rss', type: 'rss', category: 'world', country: 'CA', credibility_score: 85, is_verified: true },
+  { name: 'RTÉ News (Ireland)', url: 'https://www.rte.ie/news/rss/news-headlines.xml', type: 'rss', category: 'world', country: 'IE', credibility_score: 85, is_verified: true },
+  
+  // Major US News
+  { name: 'New York Times - World', url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', type: 'rss', category: 'world', credibility_score: 95, is_verified: true },
+  { name: 'New York Times - Top Stories', url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', type: 'rss', category: 'us', credibility_score: 95, is_verified: true },
+  { name: 'Washington Post', url: 'https://feeds.washingtonpost.com/rss/world', type: 'rss', category: 'us', credibility_score: 90, is_verified: true },
+  { name: 'Los Angeles Times', url: 'https://www.latimes.com/world-nation/rss2.0.xml', type: 'rss', category: 'us', credibility_score: 85, is_verified: true },
+  { name: 'PBS NewsHour', url: 'https://www.pbs.org/newshour/feeds/rss/headlines', type: 'rss', category: 'us', credibility_score: 90, is_verified: true },
+  { name: 'Vox News', url: 'https://www.vox.com/rss/index.xml', type: 'rss', category: 'us', credibility_score: 80, is_verified: true },
+  { name: 'Politico', url: 'https://www.politico.com/rss/politics.xml', type: 'rss', category: 'politics', credibility_score: 85, is_verified: true },
+  { name: 'The Hill', url: 'https://thehill.com/feed/', type: 'rss', category: 'politics', credibility_score: 80, is_verified: true },
+  { name: 'CBS News', url: 'https://www.cbsnews.com/latest/rss/main', type: 'rss', category: 'us', credibility_score: 85, is_verified: true },
+  { name: 'NBC News', url: 'https://feeds.nbcnews.com/nbcnews/public/news', type: 'rss', category: 'us', credibility_score: 85, is_verified: true },
+  { name: 'Fox News - World', url: 'http://feeds.foxnews.com/foxnews/world', type: 'rss', category: 'us', credibility_score: 70, is_verified: true },
+  
+  // Investigative & Independent
+  { name: 'ProPublica', url: 'https://www.propublica.org/feeds/propublica/main', type: 'rss', category: 'investigative', credibility_score: 95, is_verified: true },
+  { name: 'The Intercept', url: 'https://theintercept.com/feed/?lang=en', type: 'rss', category: 'investigative', credibility_score: 85, is_verified: true },
+  { name: 'The Conversation', url: 'https://theconversation.com/articles.atom', type: 'atom', category: 'analysis', credibility_score: 90, is_verified: true },
+  { name: 'MIT Technology Review', url: 'https://www.technologyreview.com/topnews.rss', type: 'rss', category: 'technology', credibility_score: 95, is_verified: true },
   
   // Business & Finance
-  { name: 'Financial Times', url: 'https://www.ft.com/?format=rss', type: 'rss', category: 'business', credibility_score: 90, is_verified: true },
-  { name: 'Wall Street Journal', url: 'https://feeds.a.dj.com/rss/RSSWorldNews.xml', type: 'rss', category: 'business', credibility_score: 90, is_verified: true },
-  { name: 'Bloomberg Markets', url: 'https://www.bloomberg.com/feed/podcast/etf-report.xml', type: 'rss', category: 'business', credibility_score: 90, is_verified: true },
-  { name: 'The Economist', url: 'https://www.economist.com/the-world-this-week/rss.xml', type: 'rss', category: 'business', credibility_score: 95, is_verified: true },
+  { name: 'MarketWatch', url: 'https://feeds.marketwatch.com/marketwatch/topstories/', type: 'rss', category: 'business', credibility_score: 85, is_verified: true },
+  { name: 'Yahoo Finance', url: 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=yhoo&region=US&lang=en-US', type: 'rss', category: 'business', credibility_score: 75, is_verified: true },
+  { name: 'Forbes', url: 'https://www.forbes.com/business/feed/', type: 'rss', category: 'business', credibility_score: 80, is_verified: true },
+  { name: 'Business Insider', url: 'https://www.businessinsider.com/rss', type: 'rss', category: 'business', credibility_score: 75, is_verified: true },
+  { name: 'The Economist', url: 'https://www.economist.com/latest/rss.xml', type: 'rss', category: 'business', credibility_score: 95, is_verified: true },
+  { name: 'Investopedia', url: 'https://www.investopedia.com/feed.xml', type: 'rss', category: 'business', credibility_score: 80, is_verified: true },
   
-  // Government & Policy
-  { name: 'WHO News', url: 'https://www.who.int/rss-feeds/news-english.xml', type: 'rss', category: 'health', credibility_score: 100, is_verified: true },
+  // Science & Nature
+  { name: 'Nature News', url: 'https://www.nature.com/subjects/science/rss', type: 'rss', category: 'science', credibility_score: 95, is_verified: true },
+  { name: 'New Scientist', url: 'https://www.newscientist.com/feed/home/', type: 'rss', category: 'science', credibility_score: 90, is_verified: true },
   { name: 'NASA Breaking News', url: 'https://www.nasa.gov/rss/dyn/breaking_news.rss', type: 'rss', category: 'science', credibility_score: 100, is_verified: true },
-  { name: 'US State Department', url: 'https://www.state.gov/rss-feed/press-releases/feed/', type: 'rss', category: 'politics', credibility_score: 95, is_verified: true },
+  { name: 'National Geographic', url: 'https://www.nationalgeographic.com/content/natgeo/en_us/index.rss', type: 'rss', category: 'science', credibility_score: 90, is_verified: true },
+  { name: 'Live Science', url: 'https://www.livescience.com/feeds/all', type: 'rss', category: 'science', credibility_score: 85, is_verified: true },
   
-  // Regional News - Europe
-  { name: 'Deutsche Welle', url: 'https://rss.dw.com/xml/rss-en-all', type: 'rss', category: 'world', country: 'DE', credibility_score: 85, is_verified: true },
-  { name: 'France 24', url: 'https://www.france24.com/en/rss', type: 'rss', category: 'world', country: 'FR', credibility_score: 85, is_verified: true },
-  
-  // Regional News - Asia
-  { name: 'NHK World', url: 'https://www3.nhk.or.jp/rss/news/cat0.xml', type: 'rss', category: 'world', country: 'JP', credibility_score: 85, is_verified: true },
-  { name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed', type: 'rss', category: 'world', country: 'HK', credibility_score: 80, is_verified: true },
-  
-  // Think Tanks & Research
-  { name: 'Brookings Institution', url: 'https://www.brookings.edu/feed/', type: 'rss', category: 'politics', credibility_score: 90, is_verified: true },
-  { name: 'Council on Foreign Relations', url: 'https://www.cfr.org/rss/feed/recent', type: 'rss', category: 'politics', credibility_score: 90, is_verified: true },
-  
-  // Google News (Aggregator)
-  { name: 'Google News', url: 'https://news.google.com/rss', type: 'rss', category: 'general', credibility_score: 70 },
+  // Tech News
+  { name: 'Wired', url: 'https://www.wired.com/feed/rss', type: 'rss', category: 'technology', credibility_score: 85, is_verified: true },
+  { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', type: 'rss', category: 'technology', credibility_score: 85, is_verified: true },
+  { name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index', type: 'rss', category: 'technology', credibility_score: 90, is_verified: true },
+  { name: 'Engadget', url: 'https://www.engadget.com/rss.xml', type: 'rss', category: 'technology', credibility_score: 80, is_verified: true },
+  { name: 'Mashable', url: 'https://mashable.com/feeds/rss/all', type: 'rss', category: 'technology', credibility_score: 75, is_verified: true },
+  { name: 'ZDNet', url: 'https://www.zdnet.com/news/rss.xml', type: 'rss', category: 'technology', credibility_score: 80, is_verified: true },
 ];
 
 /**
