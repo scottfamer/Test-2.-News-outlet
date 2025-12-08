@@ -1,9 +1,10 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import Parser from 'rss-parser';
+import * as RssParserModule from 'rss-parser';
 import { sourceQueries, NewsSource } from '../database/sources-schema.js';
 
-const rssParser = new Parser({
+const RssParser = (RssParserModule as any).default || RssParserModule;
+const rssParser = new RssParser({
   timeout: 10000,
   headers: {
     'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)',

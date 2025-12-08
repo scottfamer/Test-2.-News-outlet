@@ -1,8 +1,9 @@
 import axios from 'axios';
-import Parser from 'rss-parser';
+import * as RssParserModule from 'rss-parser';
 import { sourceQueries, NewsSource } from '../database/sources-schema.js';
 
-const rssParser = new Parser();
+const RssParser = (RssParserModule as any).default || RssParserModule;
+const rssParser = new RssParser();
 
 // Curated list of major news sources to seed the system
 const SEED_SOURCES: Omit<NewsSource, 'id' | 'created_at' | 'updated_at'>[] = [
