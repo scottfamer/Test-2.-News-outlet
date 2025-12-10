@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
+    "module": "Node16",
     "lib": ["ES2022"],
     "outDir": "./dist/server",
     "rootDir": "./server",
@@ -10,7 +10,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "bundler"
+    "moduleResolution": "Node16",
+    "downlevelIteration": true,
+    "composite": true
   },
   "include": ["server/**/*"],
   "exclude": ["node_modules"]

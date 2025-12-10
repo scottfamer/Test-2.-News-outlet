@@ -33,3 +33,13 @@ export async function triggerScrape(): Promise<void> {
     throw new Error('Failed to trigger scrape');
   }
 }
+
+export async function fetchTTS(articleId: number): Promise<Blob> {
+  const response = await fetch(`${API_BASE}/news/${articleId}/tts`);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch TTS audio');
+  }
+
+  return await response.blob();
+}

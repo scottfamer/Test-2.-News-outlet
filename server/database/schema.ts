@@ -103,7 +103,7 @@ export const articleQueries = {
     saveDatabase();
   },
 
-  getAll: (limit: number) => {
+  getAll: (limit: number): any[] => {
     const db = getDb();
     const stmt = db.prepare(`
       SELECT * FROM articles 
@@ -112,7 +112,7 @@ export const articleQueries = {
       LIMIT ?
     `);
     stmt.bind([limit]);
-    const results = [];
+    const results: any[] = [];
     while (stmt.step()) {
       results.push(stmt.getAsObject());
     }
@@ -153,5 +153,11 @@ export const articleQueries = {
     }
     stmt.free();
     return result;
+  },
+
+  delete: (id: number) => {
+    const db = getDb();
+    db.run(`DELETE FROM articles WHERE id = ?`, [id]);
+    saveDatabase();
   },
 };

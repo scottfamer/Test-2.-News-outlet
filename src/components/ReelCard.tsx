@@ -1,23 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Shield, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { ExternalLink, Shield, Clock, ChevronDown, ChevronUp, Volume2, VolumeX, Loader } from 'lucide-react';
 import { Article } from '../types';
 import { fetchArticleById } from '../api';
 import { FullArticle } from '../types';
+import { useTTS } from '../hooks/useTTS';
 
 interface ReelCardProps {
   article: Article;
+  isActive: boolean;
+  observerRef: React.MutableRefObject<IntersectionObserver | null>;
 }
 
-export default function ReelCard({ article }: ReelCardProps) {
+export default function ReelCard({ article, isActive, observerRef }: ReelCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [fullArticle, setFullArticle] = useState<FullArticle | null>(null);
   const [loadingFull, setLoadingFull] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const cardRef = useRef<HTMLElement>(null);
+  
+  // TTS hook - auto-play when article becomes active
+  const tts = useTTS(isActive ? article.id : null, true);
 
   const getCredibilityColor = (score: number) => {
     if (score >= 80) return 'text-green-700 bg-green-900/80 border-green-500/30';
     if (score >= 60) return 'text-yellow-700 bg-yellow-900/80 border-yellow-500/30';
     return 'text-orange-700 bg-orange-900/80 border-orange-500/30';
+  };
+
+  // Register card with intersection observer
+  useEffect(() => {
+    const card = cardRef.current;
+    if (card && observerRef.current) {
+      observerRef.current.observe(card);
+      return () => {
+        if (observerRef.current) {
+          observerRef.current.unobserve(card);
+        }
+      };
+    }
+  }, [observerRef]);
+
+  // Handle mute toggle
+  const toggleMute = () => {
+    if (isMuted) {
+      tts.play();
+    } else {
+      tts.pause();
+    }
+    setIsMuted(!isMuted);
   };
 
   const handleExpand = async () => {
@@ -36,7 +67,11 @@ export default function ReelCard({ article }: ReelCardProps) {
   };
 
   return (
-    <article className="h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 snap-start snap-always">
+    <article 
+      ref={cardRef}
+      data-article-id={article.id}
+      className="h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 snap-start snap-always"
+    >
       <div className="w-full max-w-[600px] h-full flex flex-col px-4 sm:px-6 py-8">
         {/* Content Container - Scrollable when expanded */}
         <div className={`flex-1 overflow-y-auto scrollbar-hide ${expanded ? '' : 'flex flex-col justify-center'}`}>
@@ -95,6 +130,21 @@ export default function ReelCard({ article }: ReelCardProps) {
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-6 mt-auto">
+          {/* TTS Control Button */}
+          <button
+            onClick={toggleMute}
+            className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
+            aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
+          >
+            {tts.isLoading ? (
+              <Loader className="w-5 h-5 animate-spin" />
+            ) : isMuted ? (
+              <VolumeX className="w-5 h-5" />
+            ) : (
+              <Volume2 className="w-5 h-5" />
+            )}
+          </button>
+
           <button
             onClick={handleExpand}
             className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"

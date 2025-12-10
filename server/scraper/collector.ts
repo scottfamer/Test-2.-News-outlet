@@ -22,7 +22,7 @@ export interface RawArticle {
 /**
  * Fetch content from RSS feed
  */
-async function fetchRSS(source: any): Promise<RawArticle[]> {
+async function fetchRSS(source: NewsSource): Promise<RawArticle[]> {
   try {
     const feed = await rssParser.parseURL(source.url);
     const articles: RawArticle[] = [];
@@ -114,7 +114,7 @@ export async function collectArticles(): Promise<RawArticle[]> {
   console.log(`📡 Collecting from ${sources.length} active sources`);
   
   const allArticles: RawArticle[] = [];
-  const promises = sources.map(async (source: any) => {
+  const promises = sources.map(async (source: NewsSource) => {
     try {
       let articles: RawArticle[] = [];
       
@@ -124,23 +124,27 @@ export async function collectArticles(): Promise<RawArticle[]> {
       // Add support for other types (html, api) here in the future
       
       // Record the fetch attempt
-      sourceQueries.recordFetchAttempt(
-        source.id,
-        articles.length > 0,
-        articles.length
-      );
+      if (source.id) {
+        sourceQueries.recordFetchAttempt(
+          source.id,
+          articles.length > 0,
+          articles.length
+        );
+      }
       
       return { source, articles };
     } catch (error) {
       console.error(`Error with source ${source.name}:`, error);
       
       // Record the failed attempt
-      sourceQueries.recordFetchAttempt(
-        source.id,
-        false,
-        0,
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      if (source.id) {
+        sourceQueries.recordFetchAttempt(
+          source.id,
+          false,
+          0,
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+      }
       
       return { source, articles: [] };
     }

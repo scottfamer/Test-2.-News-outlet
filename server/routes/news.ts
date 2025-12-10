@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { articleQueries } from '../database/schema.js';
+import { articleQueries, Article } from '../database/schema.js';
 import { runNewsPipeline } from '../scraper/pipeline.js';
+import { generateTTS, getTTSCache } from '../services/tts.js';
 
 const router = Router();
 
@@ -118,8 +119,10 @@ router.delete('/news', async (req, res) => {
     
     for (const article of allArticles) {
       try {
-        articleQueries.delete(article.id);
-        deleted++;
+        if (typeof article.id === 'number') {
+          articleQueries.delete(article.id);
+          deleted++;
+        }
       } catch (error) {
         console.error(`Error deleting article ${article.id}:`, error);
       }
@@ -137,6 +140,58 @@ router.delete('/news', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to clear articles'
+    });
+  }
+});
+
+/**
+ * GET /api/news/:id/tts
+ * Generate text-to-speech audio for an article
+ * Returns audio stream or cached audio URL
+ */
+router.get('/news/:id/tts', async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    
+    // Check if we have cached TTS
+    const cached = getTTSCache(articleId);
+    if (cached) {
+      return res.json({
+        success: true,
+        cached: true,
+        audioUrl: cached
+      });
+    }
+    
+    // Get the article
+    const article = articleQueries.getById(articleId);
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+    
+    // Generate TTS
+    const audioBuffer = await generateTTS(
+      articleId,
+      (article as any).headline,
+      (article as any).summary,
+      (article as any).full_text
+    );
+    
+    // Send audio as response
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Content-Length': audioBuffer.length,
+      'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+    });
+    res.send(audioBuffer);
+  } catch (error) {
+    console.error('Error generating TTS:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate audio'
     });
   }
 });

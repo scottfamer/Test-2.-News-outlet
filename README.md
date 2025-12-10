@@ -7,6 +7,8 @@ A modern, full-stack news aggregation system that uses AI to gather, process, an
 - **AI-Powered News Collection**: Automatically gathers news from 15+ trusted sources including BBC, Reuters, AP, NPR, and more
 - **Intelligent Processing**: Uses OpenAI GPT-4 to analyze, summarize, and rewrite articles in professional journalism style
 - **Credibility Scoring**: AI evaluates each article's credibility (0-100) based on source reliability and content quality
+- **🎙️ Text-to-Speech Playback**: Auto-playing AI voice reads articles aloud as you scroll through the feed
+- **TikTok-Style Reels Interface**: Swipe through news stories with full-screen, immersive cards
 - **Real-Time Updates**: Auto-refreshing feed with new breaking news every 30 seconds
 - **Single-Page Experience**: Clean, modern UI displaying all breaking news on one elegant page
 - **Full Article View**: Click any article to read the complete AI-generated story
@@ -19,6 +21,7 @@ A modern, full-stack news aggregation system that uses AI to gather, process, an
 - **Node.js + Express + TypeScript**: RESTful API server
 - **SQLite Database**: Fast, embedded storage for articles
 - **OpenAI GPT-4 Mini**: AI processing and analysis
+- **OpenAI TTS (tts-1)**: Text-to-speech audio generation
 - **RSS Parser**: Multi-source news aggregation
 - **Cheerio**: Web scraping for full article content
 - **Node-Cron**: Scheduled background jobs
@@ -131,6 +134,19 @@ Manually triggers the AI news gathering pipeline.
 }
 ```
 
+### GET /api/news/:id/tts
+Generates or retrieves cached text-to-speech audio for an article.
+
+**Response:**
+- Content-Type: `audio/mpeg`
+- Returns MP3 audio stream
+- Cached for 24 hours
+
+**Example:**
+```bash
+curl http://localhost:3001/api/news/1/tts --output article.mp3
+```
+
 ## 🤖 AI Pipeline Process
 
 1. **Collection**: Gather articles from 15+ RSS feeds and news sources
@@ -154,6 +170,8 @@ ai-breaking-news/
 │   │   └── schema.ts       # SQLite database schema
 │   ├── ai/
 │   │   └── processor.ts    # OpenAI integration
+│   ├── services/
+│   │   └── tts.ts          # Text-to-speech service
 │   ├── scraper/
 │   │   ├── sources.ts      # News source configurations
 │   │   ├── collector.ts    # Data collection logic
@@ -166,16 +184,31 @@ ai-breaking-news/
 │   ├── App.tsx             # Main application
 │   ├── components/
 │   │   ├── Header.tsx      # Top navigation
+│   │   ├── ReelsContainer.tsx # Scroll container with observer
+│   │   ├── ReelCard.tsx    # Full-screen article card
 │   │   ├── ArticleCard.tsx # News card component
 │   │   └── ArticleModal.tsx # Full article viewer
+│   ├── hooks/
+│   │   └── useTTS.ts       # Text-to-speech hook
 │   ├── api.ts              # API client
 │   └── types.ts            # TypeScript types
-├── data/                    # SQLite database (auto-created)
+├── data/
+│   ├── news.db             # SQLite database (auto-created)
+│   └── tts-cache/          # Cached TTS audio files
+├── TTS_FEATURE.md          # TTS documentation
 ├── package.json
 └── README.md
 ```
 
 ## 🎨 Features Breakdown
+
+### Text-to-Speech (TTS)
+- 🎙️ Auto-plays when article becomes visible (>50% in viewport)
+- Stops instantly when swiping to another article
+- Uses OpenAI's "alloy" voice for consistency
+- Smart caching reduces API costs
+- Mute/unmute control with visual feedback
+- See [TTS_FEATURE.md](./TTS_FEATURE.md) for detailed documentation
 
 ### Auto-Refresh
 - Frontend polls API every 30 seconds
