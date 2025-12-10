@@ -16,11 +16,10 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
   const [expanded, setExpanded] = useState(false);
   const [fullArticle, setFullArticle] = useState<FullArticle | null>(null);
   const [loadingFull, setLoadingFull] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   
   // TTS hook - auto-play when article becomes active
-  const tts = useTTS(isActive ? article.id : null, true);
+  const tts = useTTS(isActive ? article.id : null, isActive);
 
   const getCredibilityColor = (score: number) => {
     if (score >= 80) return 'text-green-700 bg-green-900/80 border-green-500/30';
@@ -43,12 +42,11 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
 
   // Handle mute toggle
   const toggleMute = () => {
-    if (isMuted) {
-      tts.play();
-    } else {
+    if (tts.isPlaying) {
       tts.pause();
+    } else {
+      tts.play();
     }
-    setIsMuted(!isMuted);
   };
 
   const handleExpand = async () => {
@@ -133,15 +131,16 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
           {/* TTS Control Button */}
           <button
             onClick={toggleMute}
-            className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
-            aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
+            disabled={!isActive || tts.isLoading}
+            className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={tts.isPlaying ? 'Pause audio' : 'Play audio'}
           >
             {tts.isLoading ? (
               <Loader className="w-5 h-5 animate-spin" />
-            ) : isMuted ? (
-              <VolumeX className="w-5 h-5" />
-            ) : (
+            ) : tts.isPlaying ? (
               <Volume2 className="w-5 h-5" />
+            ) : (
+              <VolumeX className="w-5 h-5" />
             )}
           </button>
 

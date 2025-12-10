@@ -31,10 +31,41 @@ export function useTTS(articleId: number | null, autoPlay: boolean = false): Use
 
   // Cache of loaded audio URLs to avoid regeneration
   const audioUrlCache = useRef<Map<number, string>>(new Map());
+  
+  // Track if this is the first load to enable autoplay workaround
+  const isFirstLoadRef = useRef(true);
+  
+  // Track current article ID to detect changes immediately
+  const currentArticleIdRef = useRef<number | null>(null);
+
+  // Cleanup function to immediately stop and dispose audio
+  const cleanupAudio = useCallback(() => {
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.src = '';
+        audioRef.current.load(); // Force cleanup
+        audioRef.current = null;
+      } catch (err) {
+        console.error('Error cleaning up audio:', err);
+      }
+    }
+    setState({
+      isPlaying: false,
+      isLoading: false,
+      error: null,
+      currentTime: 0,
+      duration: 0,
+    });
+  }, []);
 
   // Load and play audio for an article
   const loadAndPlay = useCallback(async (id: number) => {
     try {
+      // Immediately cleanup any existing audio
+      cleanupAudio();
+      
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
       // Check cache first
@@ -48,6 +79,7 @@ export function useTTS(articleId: number | null, autoPlay: boolean = false): Use
 
       // Create new audio element
       const audio = new Audio(audioUrl);
+      audio.preload = 'auto';
       
       // Set up event listeners
       audio.addEventListener('loadedmetadata', () => {
@@ -80,18 +112,26 @@ export function useTTS(articleId: number | null, autoPlay: boolean = false): Use
         }));
       });
 
-      // Clean up previous audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-      }
-
       audioRef.current = audio;
 
       // Auto-play if enabled
       if (autoPlay) {
         try {
-          await audio.play();
+          // For first load, try to play with muted initially to bypass autoplay restrictions
+          if (isFirstLoadRef.current) {
+            audio.muted = true;
+            await audio.play();
+            // Unmute after a brief moment
+            setTimeout(() => {
+              if (audioRef.current === audio) {
+                audio.muted = false;
+              }
+            }, 100);
+            isFirstLoadRef.current = false;
+          } else {
+            // Subsequent plays should work without muting
+            await audio.play();
+          }
         } catch (err) {
           console.warn('Auto-play prevented by browser:', err);
           setState(prev => ({ ...prev, isLoading: false }));
@@ -107,7 +147,7 @@ export function useTTS(articleId: number | null, autoPlay: boolean = false): Use
         error: 'Failed to load audio' 
       }));
     }
-  }, [autoPlay]);
+  }, [autoPlay, cleanupAudio]);
 
   // Play current audio
   const play = useCallback(() => {
@@ -144,26 +184,33 @@ export function useTTS(articleId: number | null, autoPlay: boolean = false): Use
 
   // Load audio when articleId changes
   useEffect(() => {
-    if (articleId !== null) {
-      loadAndPlay(articleId);
+    // If article changed, immediately stop previous audio
+    if (currentArticleIdRef.current !== null && currentArticleIdRef.current !== articleId) {
+      cleanupAudio();
     }
-
-    // Cleanup on unmount or article change
+    
+    currentArticleIdRef.current = articleId;
+    
+    if (articleId !== null) {
+      // Small delay to ensure previous cleanup completed
+      const timer = setTimeout(() => {
+        loadAndPlay(articleId);
+      }, 50);
+      
+      return () => {
+        clearTimeout(timer);
+        cleanupAudio();
+      };
+    } else {
+      // If no article, cleanup immediately
+      cleanupAudio();
+    }
+    
+    // Cleanup on unmount
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current = null;
-      }
-      setState({
-        isPlaying: false,
-        isLoading: false,
-        error: null,
-        currentTime: 0,
-        duration: 0,
-      });
+      cleanupAudio();
     };
-  }, [articleId, loadAndPlay]);
+  }, [articleId, loadAndPlay, cleanupAudio]);
 
   return {
     ...state,
