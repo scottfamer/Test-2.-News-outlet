@@ -20,6 +20,7 @@ export default function ReelsContainer({ articles }: ReelsContainerProps) {
           // An article is considered active if more than 50% is visible
           if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
             const articleId = parseInt(entry.target.getAttribute('data-article-id') || '0');
+            console.log(`📍 ReelsContainer: Article ${articleId} is now active (${Math.round(entry.intersectionRatio * 100)}% visible)`);
             setActiveArticleId(articleId);
           }
         });
@@ -36,6 +37,13 @@ export default function ReelsContainer({ articles }: ReelsContainerProps) {
       }
     };
   }, []);
+
+  // Log when active article changes
+  useEffect(() => {
+    if (activeArticleId !== null) {
+      console.log(`🎯 ReelsContainer: Active article ID set to ${activeArticleId}`);
+    }
+  }, [activeArticleId]);
 
   return (
     <div 
