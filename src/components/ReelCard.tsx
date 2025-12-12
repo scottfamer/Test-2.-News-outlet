@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Shield, Clock, ChevronDown, ChevronUp, Volume2, VolumeX } from 'lucide-react';
+import { ExternalLink, Shield, Clock, ChevronDown, ChevronUp, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { Article } from '../types';
 import { fetchArticleById } from '../api';
 import { FullArticle } from '../types';
@@ -131,7 +131,9 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
             className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label={tts.isMuted ? 'Unmute audio' : 'Mute audio'}
           >
-            {tts.isMuted ? (
+            {tts.isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : tts.isMuted ? (
               <VolumeX className="w-5 h-5" />
             ) : (
               <Volume2 className="w-5 h-5" />

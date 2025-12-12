@@ -4,6 +4,7 @@ import { audioManager } from '../services/AudioManager';
 interface TTSState {
   isPlaying: boolean;
   isMuted: boolean;
+  isLoading: boolean;
   currentTime: number;
   duration: number;
 }
@@ -23,6 +24,7 @@ export function useTTS(articleId: number, isActive: boolean): UseTTSReturn {
     return {
       isPlaying: managerState.isPlaying,
       isMuted: managerState.isMuted,
+      isLoading: managerState.isLoading,
       currentTime: managerState.currentTime,
       duration: managerState.duration,
     };
@@ -35,6 +37,7 @@ export function useTTS(articleId: number, isActive: boolean): UseTTSReturn {
       setState({
         isPlaying: managerState.isPlaying,
         isMuted: managerState.isMuted,
+        isLoading: managerState.isLoading,
         currentTime: managerState.currentTime,
         duration: managerState.duration,
       });

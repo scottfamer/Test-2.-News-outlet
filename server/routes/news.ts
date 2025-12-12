@@ -146,31 +146,28 @@ router.delete('/news', async (req, res) => {
 
 /**
  * GET /api/news/:id/tts
- * Generate text-to-speech audio for an article
- * Returns audio stream or cached audio URL
+ * Returns audio stream (always returns audio/mpeg, never JSON)
  */
 router.get('/news/:id/tts', async (req, res) => {
   try {
     const articleId = parseInt(req.params.id);
     
+    // Get the article first
+    const article = articleQueries.getById(articleId);
+    if (!article) {
+      // Return a minimal error audio or 404
+      return res.status(404).send('Article not found');
+    }
+    
     // Check if we have cached TTS
     const cached = getTTSCache(articleId);
     if (cached) {
-      return res.json({
-        success: true,
-        cached: true,
-        audioUrl: cached
-      });
+      console.log(`♻️ Using cached TTS for article ${articleId}`);
+      // Redirect to cached audio or serve it
+      // For now, regenerate (you can improve caching later)
     }
     
-    // Get the article
-    const article = articleQueries.getById(articleId);
-    if (!article) {
-      return res.status(404).json({
-        success: false,
-        error: 'Article not found'
-      });
-    }
+    console.log(`🎙️ Generating TTS for article ${articleId}`);
     
     // Generate TTS
     const audioBuffer = await generateTTS(
@@ -180,19 +177,20 @@ router.get('/news/:id/tts', async (req, res) => {
       (article as any).full_text
     );
     
-    // Send audio as response
+    console.log(`✅ TTS generated for article ${articleId}: ${audioBuffer.length} bytes`);
+    
+    // Always send audio as response
     res.set({
       'Content-Type': 'audio/mpeg',
       'Content-Length': audioBuffer.length,
       'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+      'Accept-Ranges': 'bytes',
     });
     res.send(audioBuffer);
   } catch (error) {
     console.error('Error generating TTS:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to generate audio'
-    });
+    // Return 500 with plain text error (not JSON)
+    res.status(500).send('Failed to generate audio');
   }
 });
 
