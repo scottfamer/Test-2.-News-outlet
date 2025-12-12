@@ -40,13 +40,9 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
     }
   }, [observerRef]);
 
-  // Handle mute toggle
-  const toggleMute = () => {
-    if (tts.isPlaying) {
-      tts.pause();
-    } else {
-      tts.play();
-    }
+  // Handle audio toggle
+  const toggleAudio = () => {
+    tts.toggle();
   };
 
   const handleExpand = async () => {
@@ -130,7 +126,7 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
         <div className="flex gap-3 pt-6 mt-auto">
           {/* TTS Control Button */}
           <button
-            onClick={toggleMute}
+            onClick={toggleAudio}
             disabled={!isActive || tts.isLoading}
             className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label={tts.isPlaying ? 'Pause audio' : 'Play audio'}
