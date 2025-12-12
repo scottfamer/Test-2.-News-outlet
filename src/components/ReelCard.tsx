@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Shield, Clock, ChevronDown, ChevronUp, Play, Pause, Loader } from 'lucide-react';
+import { ExternalLink, Shield, Clock, ChevronDown, ChevronUp, Volume2, VolumeX, Loader } from 'lucide-react';
 import { Article } from '../types';
 import { fetchArticleById } from '../api';
 import { FullArticle } from '../types';
@@ -18,8 +18,8 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
   const [loadingFull, setLoadingFull] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   
-  // TTS hook - auto-play when article becomes active
-  const tts = useTTS(isActive ? article.id : null, isActive);
+  // TTS hook - auto-plays when article becomes active, respects global mute state
+  const tts = useTTS(article.id, isActive);
 
   const getCredibilityColor = (score: number) => {
     if (score >= 80) return 'text-green-700 bg-green-900/80 border-green-500/30';
@@ -40,9 +40,9 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
     }
   }, [observerRef]);
 
-  // Handle audio toggle
-  const toggleAudio = () => {
-    tts.toggle();
+  // Handle mute/unmute toggle
+  const handleMuteToggle = () => {
+    tts.toggleMute();
   };
 
   const handleExpand = async () => {
@@ -124,19 +124,19 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-6 mt-auto">
-          {/* TTS Control Button */}
+          {/* TTS Mute/Unmute Button */}
           <button
-            onClick={toggleAudio}
+            onClick={handleMuteToggle}
             disabled={!isActive}
             className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label={tts.isPlaying ? 'Pause audio' : 'Play audio'}
+            aria-label={tts.isMuted ? 'Unmute audio' : 'Mute audio'}
           >
             {tts.isLoading ? (
               <Loader className="w-5 h-5 animate-spin" />
-            ) : tts.isPlaying ? (
-              <Pause className="w-5 h-5" />
+            ) : tts.isMuted ? (
+              <VolumeX className="w-5 h-5" />
             ) : (
-              <Play className="w-5 h-5" />
+              <Volume2 className="w-5 h-5" />
             )}
           </button>
 

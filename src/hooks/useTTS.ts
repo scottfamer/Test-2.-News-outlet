@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface TTSState {
   isPlaying: boolean;
+  isMuted: boolean;
   isLoading: boolean;
   error: string | null;
   currentTime: number;
@@ -9,30 +10,28 @@ interface TTSState {
 }
 
 interface UseTTSReturn extends TTSState {
-  play: () => void;
-  pause: () => void;
-  stop: () => void;
-  seek: (time: number) => void;
-  toggle: () => void;
+  toggleMute: () => void;
 }
+
+// Global mute state that persists across article changes
+let globalMuted = false;
 
 /**
  * Hook for managing text-to-speech audio playback
- * Handles audio loading, playback, and cleanup
+ * Auto-plays when article becomes active
+ * Button toggles mute/unmute
  */
-export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false): UseTTSReturn {
+export function useTTS(articleId: number | null, isActive: boolean = false): UseTTSReturn {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [state, setState] = useState<TTSState>({
     isPlaying: false,
+    isMuted: globalMuted,
     isLoading: false,
     error: null,
     currentTime: 0,
     duration: 0,
   });
 
-  // Track if audio has been user-paused (to prevent auto-resume)
-  const userPausedRef = useRef(false);
-  
   // Track the current article ID
   const currentArticleIdRef = useRef<number | null>(null);
 
@@ -40,7 +39,7 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
       try {
-        // Remove all event listeners by cloning the audio element
+        console.log('🧹 Cleaning up audio');
         const oldAudio = audioRef.current;
         oldAudio.pause();
         oldAudio.src = '';
@@ -50,75 +49,50 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
       }
       audioRef.current = null;
     }
-    setState({
+    setState(prev => ({
+      ...prev,
       isPlaying: false,
       isLoading: false,
       error: null,
       currentTime: 0,
       duration: 0,
-    });
-    userPausedRef.current = false;
+    }));
   }, []);
 
-  // Play current audio
-  const play = useCallback(() => {
+  // Toggle mute/unmute
+  const toggleMute = useCallback(() => {
+    const newMutedState = !state.isMuted;
+    globalMuted = newMutedState;
+    setState(prev => ({ ...prev, isMuted: newMutedState }));
+    
     if (audioRef.current) {
-      console.log('▶️ Playing audio...');
-      userPausedRef.current = false;
-      audioRef.current.play().catch(err => {
-        console.error('❌ Play error:', err);
-        setState(prev => ({ ...prev, error: 'Failed to play audio', isPlaying: false }));
-      });
-    } else {
-      console.warn('⚠️ No audio reference available');
+      if (newMutedState) {
+        console.log('🔇 Muting audio');
+        audioRef.current.pause();
+      } else {
+        console.log('🔊 Unmuting audio');
+        audioRef.current.play().catch(err => {
+          console.error('❌ Error resuming audio:', err);
+        });
+      }
     }
-  }, []);
+  }, [state.isMuted]);
 
-  // Pause current audio
-  const pause = useCallback(() => {
-    if (audioRef.current) {
-      userPausedRef.current = true;
-      audioRef.current.pause();
-    }
-  }, []);
-
-  // Toggle play/pause
-  const toggle = useCallback(() => {
-    if (state.isPlaying) {
-      pause();
-    } else {
-      play();
-    }
-  }, [state.isPlaying, play, pause]);
-
-  // Stop and reset audio
-  const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      userPausedRef.current = true;
-    }
-  }, []);
-
-  // Seek to specific time
-  const seek = useCallback((time: number) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
-    }
-  }, []);
-
-  // Load audio when articleId changes
+  // Load and manage audio when article becomes active
   useEffect(() => {
     // Cleanup previous audio when article changes
     if (currentArticleIdRef.current !== articleId) {
+      console.log('📝 Article changed, cleaning up previous audio');
       cleanupAudio();
       currentArticleIdRef.current = articleId;
     }
     
-    // If no article ID, just cleanup and return
-    if (articleId === null) {
+    // Only load and play audio if article is active
+    if (articleId === null || !isActive) {
       return;
     }
+
+    console.log(`🎬 Loading audio for article ${articleId}`);
 
     // Create and load new audio
     const loadAudio = async () => {
@@ -135,7 +109,6 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
         });
 
         audio.addEventListener('loadeddata', () => {
-          // Audio is ready to play
           setState(prev => ({ ...prev, isLoading: false }));
         });
 
@@ -153,11 +126,10 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
 
         audio.addEventListener('ended', () => {
           setState(prev => ({ ...prev, isPlaying: false, currentTime: 0 }));
-          userPausedRef.current = false;
         });
 
         audio.addEventListener('error', (e) => {
-          console.error('Audio playback error:', e);
+          console.error('❌ Audio playback error:', e);
           setState(prev => ({ 
             ...prev, 
             isPlaying: false, 
@@ -166,28 +138,31 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
           }));
         });
 
-        // Wait for audio to be ready before attempting to play
+        // Auto-play when ready (unless muted)
         audio.addEventListener('canplay', async () => {
-          console.log('🎵 Audio ready to play');
-          // Auto-play if enabled and user hasn't manually paused
-          if (shouldAutoPlay && !userPausedRef.current && audioRef.current === audio) {
-            console.log('🚀 Attempting auto-play...');
+          console.log('🎵 Audio ready');
+          
+          // Only auto-play if not muted and this is still the current audio
+          if (!globalMuted && audioRef.current === audio) {
+            console.log('🚀 Auto-playing audio...');
             try {
               await audio.play();
               console.log('✅ Auto-play successful');
             } catch (err) {
-              // Auto-play blocked by browser - this is expected
-              console.log('🚫 Auto-play blocked by browser, user interaction required');
+              console.log('🚫 Auto-play blocked by browser');
+              // Set muted state if auto-play fails
+              globalMuted = true;
+              setState(prev => ({ ...prev, isMuted: true }));
             }
+          } else {
+            console.log('🔇 Audio loaded but muted');
           }
         }, { once: true });
 
         audioRef.current = audio;
-
-        // Load the audio
         audio.load();
       } catch (error) {
-        console.error('Error loading TTS:', error);
+        console.error('❌ Error loading TTS:', error);
         setState(prev => ({ 
           ...prev, 
           isLoading: false, 
@@ -202,14 +177,10 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
     return () => {
       cleanupAudio();
     };
-  }, [articleId, shouldAutoPlay, cleanupAudio]);
+  }, [articleId, isActive, cleanupAudio]);
 
   return {
     ...state,
-    play,
-    pause,
-    stop,
-    seek,
-    toggle,
+    toggleMute,
   };
 }
