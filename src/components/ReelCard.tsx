@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Shield, Clock, ChevronDown, ChevronUp, Volume2, VolumeX, Loader } from 'lucide-react';
+import { ExternalLink, Shield, Clock, ChevronDown, ChevronUp, Play, Pause, Loader } from 'lucide-react';
 import { Article } from '../types';
 import { fetchArticleById } from '../api';
 import { FullArticle } from '../types';
@@ -127,16 +127,16 @@ export default function ReelCard({ article, isActive, observerRef }: ReelCardPro
           {/* TTS Control Button */}
           <button
             onClick={toggleAudio}
-            disabled={!isActive || tts.isLoading}
+            disabled={!isActive}
             className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label={tts.isPlaying ? 'Pause audio' : 'Play audio'}
           >
             {tts.isLoading ? (
               <Loader className="w-5 h-5 animate-spin" />
             ) : tts.isPlaying ? (
-              <Volume2 className="w-5 h-5" />
+              <Pause className="w-5 h-5" />
             ) : (
-              <VolumeX className="w-5 h-5" />
+              <Play className="w-5 h-5" />
             )}
           </button>
 

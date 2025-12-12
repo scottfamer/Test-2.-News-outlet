@@ -63,11 +63,14 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
   // Play current audio
   const play = useCallback(() => {
     if (audioRef.current) {
+      console.log('▶️ Playing audio...');
       userPausedRef.current = false;
       audioRef.current.play().catch(err => {
-        console.error('Play error:', err);
+        console.error('❌ Play error:', err);
         setState(prev => ({ ...prev, error: 'Failed to play audio', isPlaying: false }));
       });
+    } else {
+      console.warn('⚠️ No audio reference available');
     }
   }, []);
 
@@ -128,7 +131,12 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
         
         // Set up event listeners
         audio.addEventListener('loadedmetadata', () => {
-          setState(prev => ({ ...prev, duration: audio.duration, isLoading: false }));
+          setState(prev => ({ ...prev, duration: audio.duration }));
+        });
+
+        audio.addEventListener('loadeddata', () => {
+          // Audio is ready to play
+          setState(prev => ({ ...prev, isLoading: false }));
         });
 
         audio.addEventListener('timeupdate', () => {
@@ -158,20 +166,26 @@ export function useTTS(articleId: number | null, shouldAutoPlay: boolean = false
           }));
         });
 
+        // Wait for audio to be ready before attempting to play
+        audio.addEventListener('canplay', async () => {
+          console.log('🎵 Audio ready to play');
+          // Auto-play if enabled and user hasn't manually paused
+          if (shouldAutoPlay && !userPausedRef.current && audioRef.current === audio) {
+            console.log('🚀 Attempting auto-play...');
+            try {
+              await audio.play();
+              console.log('✅ Auto-play successful');
+            } catch (err) {
+              // Auto-play blocked by browser - this is expected
+              console.log('🚫 Auto-play blocked by browser, user interaction required');
+            }
+          }
+        }, { once: true });
+
         audioRef.current = audio;
 
-        // Auto-play if enabled and user hasn't manually paused
-        if (shouldAutoPlay && !userPausedRef.current) {
-          try {
-            await audio.play();
-          } catch (err) {
-            // Auto-play blocked by browser - this is expected
-            console.log('Auto-play blocked, user interaction required');
-            setState(prev => ({ ...prev, isLoading: false }));
-          }
-        } else {
-          setState(prev => ({ ...prev, isLoading: false }));
-        }
+        // Load the audio
+        audio.load();
       } catch (error) {
         console.error('Error loading TTS:', error);
         setState(prev => ({ 
