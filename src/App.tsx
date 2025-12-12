@@ -4,6 +4,7 @@ import { fetchNews, triggerScrape } from './api';
 import { Article } from './types';
 import ReelsContainer from './components/ReelsContainer';
 import Header from './components/Header';
+import { audioManager } from "@/services/AudioManager";
 
 const REFRESH_INTERVAL = 30000; // 30 seconds
 
